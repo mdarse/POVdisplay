@@ -27,6 +27,7 @@ long    displayLastRefresh     = 0;
 long    displayRefreshInterval = 100000;
 
 int displayWidth       = 30; // Display horizontal resolution
+int displayStringWidth = 0;
 
 // Init text vars
 String inputString = "";        // a string to hold incoming data
@@ -68,10 +69,13 @@ void loop() {
     // It's time to move the coil
     if (coilState == LOW) {
       coilState = HIGH;
+      displayCharacterIndex  = 0;
+      displayCharacterColumn = 0;
+      displayNeedsSpace      = false;
     }
     else {
       coilState = LOW;
-      clearDisplay();
+      displayReverse = true;
     }
     digitalWrite(coilPin, coilState);
     
@@ -79,12 +83,13 @@ void loop() {
     int sensorValue = analogRead(ratePin);
     coilTickInterval = map(sensorValue, 0, 1023, 100000, 1000000);
   }
+
   // Update LEDs
-  if (now - displayLastRefresh > coilTickInterval && coilState == HIGH) {
-  // if (now - displayLastRefresh > displayRefreshInterval) {
+  if (now - displayLastRefresh > displayRefreshInterval) {
     displayLastRefresh = now;
     if (displayNeedsSpace) {
-      clearDisplay();
+       // Serial.println("-----");
+      printColumn(B00000, charHeight);
       displayNeedsSpace = false;
     }
     else
@@ -95,26 +100,28 @@ void loop() {
 void printNextColumn() {
   // Show next column
   char character = displayString[displayCharacterIndex];
+  if (character == '\0') { // If end of string
+    displayCharacterIndex = 0;
+    displayCharacterColumn = 0;
+    character = displayString[0];
+  }
   byte column = ASCII[character - 0x20][displayCharacterColumn];
+  // Serial.print(displayCharacterIndex);
+  // Serial.print(':');
+  // Serial.print(displayCharacterColumn);
+  // Serial.print('=');
+  // Serial.println(column, BIN);
   printColumn(column, charHeight);
   
   // Move markers to next column
-  if (displayCharacterColumn < charWidth - 1) // We are in the middle of a char
-    displayCharacterColumn++;
-  else { // We jump to next character
-    if (displayString[displayCharacterIndex + 1] == '\0') // If end of string
-      displayCharacterIndex = 0;
-    else
-      displayCharacterIndex++;
+  if (displayCharacterColumn == charWidth - 1) { // If end of a char
+    displayCharacterIndex++;
     displayCharacterColumn = 0;
     displayNeedsSpace = true; // Mark next loop for inserting a thin space
   }
-
-  Serial.print('\n');
-}
-
-void clearDisplay() {
-  printColumn(B00000, charHeight);
+  else {
+    displayCharacterColumn++;
+  }
 }
 
 void printColumn(byte column, int size) {
