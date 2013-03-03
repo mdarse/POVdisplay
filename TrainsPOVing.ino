@@ -17,13 +17,20 @@ const int ledPinsSize = 6;
 int coilState = LOW;
 long coilLastUpdate = 0;
 long coilTickInterval = 100000;
+// Init display vars
+char    displayString[8]     = "";
+int     displayStringLength    = 0;
+int     displayCharacterIndex  = 0;
+int     displayCharacterColumn = 0;
+boolean displayNeedsSpace      = false;
+long    displayLastRefresh     = 0;
+long    displayRefreshInterval = 100000;
+
+int displayWidth       = 30; // Display horizontal resolution
+
 // Init text vars
-char displayString[] = "10:12";
-int displayCharacterIndex = 0;
-int displayCharacterColumn = 0;
-int displayNeedsSpace = false;
-long displayLastRefresh = 0;
-long displayRefreshInterval = 2000;
+String inputString = "";        // a string to hold incoming data
+boolean stringComplete = false; // whether the string is complete
 
 void setup() {
   pinMode(coilPin, OUTPUT);
@@ -31,10 +38,28 @@ void setup() {
   for (int pin = 0; pin < ledPinsSize; pin++) {
     pinMode(ledPins[pin], OUTPUT);
   }
+  // Init data input
   Serial.begin(9600);
+  inputString.reserve(sizeof(displayString));
 }
 
 void loop() {
+  // print the string when a newline arrives) 
+  if (stringComplete) {
+    displayCharacterIndex  = 0;
+    displayCharacterColumn = 0;
+    displayNeedsSpace      = false;
+    inputString.toCharArray(displayString, sizeof(displayString));
+    displayStringLength = inputString.length();
+    // width = letter number x letter width + a space between each letter
+    displayStringWidth = displayStringLength * (charWidth + 1) - 1;
+    Serial.println("Received \"" + inputString + "\"");
+    Serial.println(inputString.length());
+    // clear the string
+    inputString = "";
+    stringComplete = false;
+  }
+  
   unsigned long now = micros();
   
   // Coil actuator
@@ -98,5 +123,17 @@ void printColumn(byte column, int size) {
     bool pixel = column & (1 << y);
     //Serial.print(pixel);
     digitalWrite(ledPins[y], pixel);
+  }
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+    if (inChar == ' ') { // if the incoming character is a newline
+      stringComplete = true;
+    }
+    else {
+      inputString += inChar;
+    }
   }
 }
