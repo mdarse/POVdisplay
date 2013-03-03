@@ -9,14 +9,14 @@ const int charWidth = 5;
 
 // Define pin setup
 const int coilPin = 2; // Coil driver
-const int coilIntervalPin = A0;
+const int ratePin = A0;
 const int ledPins[] = {3,4,5,6,7,8}; // LEDs
 const int ledPinsSize = 6;
 
 // Init coil vars
 int coilState = LOW;
 long coilLastUpdate = 0;
-long coilTickInterval = 100;
+long coilTickInterval = 100000;
 // Init text vars
 char displayString[] = "10:12";
 int displayCharacterIndex = 0;
@@ -35,13 +35,9 @@ void setup() {
 }
 
 void loop() {
-  // Coil interval
-  coilTickInterval = analogRead(coilIntervalPin);
- // coilTickInterval = 235;
-  Serial.print(coilTickInterval);
-  Serial.print('\n');
+  unsigned long now = micros();
+  
   // Coil actuator
-  unsigned long now = millis();
   if (now - coilLastUpdate > coilTickInterval) {
     coilLastUpdate = now; // update last tick
     // It's time to move the coil
@@ -53,6 +49,10 @@ void loop() {
       clearDisplay();
     }
     digitalWrite(coilPin, coilState);
+    
+    // Rate
+    int sensorValue = analogRead(ratePin);
+    coilTickInterval = map(sensorValue, 0, 1023, 100000, 1000000);
   }
   // Update LEDs
   if (now - displayLastRefresh > coilTickInterval && coilState == HIGH) {
