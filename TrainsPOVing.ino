@@ -23,6 +23,7 @@ int     displayStringLength    = 0;
 int     displayCharacterIndex  = 0;
 int     displayCharacterColumn = 0;
 boolean displayNeedsSpace      = false;
+boolean displayReverse         = false;
 long    displayLastRefresh     = 0;
 long    displayRefreshInterval = 100000;
 
@@ -50,6 +51,7 @@ void loop() {
     displayCharacterIndex  = 0;
     displayCharacterColumn = 0;
     displayNeedsSpace      = false;
+    displayReverse         = false;
     inputString.toCharArray(displayString, sizeof(displayString));
     displayStringLength = inputString.length();
     // width = letter number x letter width + a space between each letter
@@ -72,6 +74,7 @@ void loop() {
       displayCharacterIndex  = 0;
       displayCharacterColumn = 0;
       displayNeedsSpace      = false;
+      displayReverse         = false;
     }
     else {
       coilState = LOW;
@@ -92,6 +95,8 @@ void loop() {
       printColumn(B00000, charHeight);
       displayNeedsSpace = false;
     }
+    else if (displayReverse)
+      printColumn(B00000, charHeight);
     else
       printNextColumn();
   }
@@ -127,8 +132,7 @@ void printNextColumn() {
 void printColumn(byte column, int size) {
   for (int y=0; y<size; y++) {
     // Get current pixel
-    bool pixel = column & (1 << y);
-    //Serial.print(pixel);
+    boolean pixel = column & (1 << y);
     digitalWrite(ledPins[y], pixel);
   }
 }
