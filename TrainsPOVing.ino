@@ -85,6 +85,7 @@ void loop() {
     // Rate
     int sensorValue = analogRead(ratePin);
     coilTickInterval = map(sensorValue, 0, 1023, 100000, 1000000);
+    displayRefreshInterval = coilTickInterval / displayStringWidth;
   }
 
   // Update LEDs
