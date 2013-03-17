@@ -32,7 +32,7 @@ int coilState = LOW;
 long coilLastUpdate = 0;
 long coilTickInterval = 100000;
 // Init display vars
-char    displayString[8]     = "";
+char    displayString[32]; // 31 char + NULL byte
 int     displayStringLength    = 0;
 int     displayCharacterIndex  = 0;
 int     displayCharacterColumn = 0;
@@ -43,9 +43,6 @@ long    displayRefreshInterval = 100000;
 // Geometry
 int displayWidth       = 30; // Display horizontal resolution
 int displayStringWidth = 0;
-// Init text vars
-String inputString = "";        // a string to hold incoming data
-boolean stringComplete = false; // whether the string is complete
 
 
 
@@ -154,7 +151,7 @@ void displayCommand(WebServer &server, WebServer::ConnectionType type, char *, b
       repeat = server.readPOSTparam(name, NAMELEN, value, VALUELEN);
       
       if (strcmp(name, "text") == 0) {
-        // change display text here
+        setText(value, strlen(value));
       }
     }
     while (repeat);
@@ -208,24 +205,6 @@ void loop() {
   // process incoming connections (one at a time)
   webserver.processConnection(buffer, &length);
   
-  // print the string when a newline arrives) 
-  if (stringComplete) {
-    displayCharacterIndex  = 0;
-    displayCharacterColumn = 0;
-    displayNeedsSpace      = false;
-    displayReverse         = false;
-    inputString.toCharArray(displayString, sizeof(displayString));
-    displayStringLength = inputString.length();
-    // width = letter number x letter width + a space between each letter
-    displayStringWidth = displayStringLength * (charWidth + 1) - 1;
-    Serial.println("Received \"" + inputString + "\"");
-    Serial.println(inputString.length());
-    // clear the string
-    inputString = "";
-    stringComplete = false;
-  }
-  
-    
   unsigned long now = micros();
   
   // Coil actuator
@@ -266,6 +245,23 @@ void loop() {
   }
 }
 
+void setText(char * text, unsigned int size) {
+  if (!text || !size) return;
+  strncpy(displayString, text, size);
+  displayStringLength = size;
+  // Reset display
+  displayCharacterIndex  = 0;
+  displayCharacterColumn = 0;
+  displayNeedsSpace      = false;
+  displayReverse         = false;
+  // width = letter number x letter width + a space between each letter
+  displayStringWidth = displayStringLength * (charWidth + 1) - 1;
+  
+  Serial.print("set text \"");
+  Serial.print(displayString);
+  Serial.println("\"");
+}
+
 void printNextColumn() {
   // Show next column
   char character = displayString[displayCharacterIndex];
@@ -298,18 +294,6 @@ void printColumn(byte column) {
     // Get current pixel
     boolean pixel = column & (1 << y);
     digitalWrite(ledPins[y], pixel);
-  }
-}
-
-void serialEvent() {
-  while (Serial.available()) {
-    char inChar = (char)Serial.read();
-    if (inChar == '\n') { // if the incoming character is a newline
-      stringComplete = true;
-    }
-    else {
-      inputString += inChar;
-    }
   }
 }
 
