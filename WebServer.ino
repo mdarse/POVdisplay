@@ -249,11 +249,6 @@ void setText(char * text, unsigned int size) {
   if (!text || !size) return;
   strncpy(displayString, text, size);
   displayStringLength = size;
-  // Reset display
-  displayCharacterIndex  = 0;
-  displayCharacterColumn = 0;
-  displayNeedsSpace      = false;
-  displayReverse         = false;
   // width = letter number x letter width + a space between each letter
   displayStringWidth = displayStringLength * (charWidth + 1) - 1;
   
