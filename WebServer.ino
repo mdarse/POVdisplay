@@ -22,13 +22,11 @@ WebServer webserver(PREFIX, 80);
 // Display settings //
 //////////////////////
 #define SIZE(x)  (sizeof(x) / sizeof(x[0]))
-const int charHeight = 5;
 const int charWidth = 5;
 // Define pin setup
 const int coilPin = 2; // Coil driver
 const int ratePin = A0;
 const int ledPins[] = {3,4,5,6,7,8}; // LEDs
-const int ledPinsSize = 6;
 // Init coil vars
 int coilState = LOW;
 long coilLastUpdate = 0;
@@ -186,7 +184,7 @@ void displayCommand(WebServer &server, WebServer::ConnectionType type, char *, b
 void setup() {
   // Pin setup
   pinMode(coilPin, OUTPUT);
-  for (int pin = 0; pin < ledPinsSize; pin++) {
+  for (int pin = 0; pin < SIZE(ledPins); pin++) {
     pinMode(ledPins[pin], OUTPUT);
   }
   
@@ -258,11 +256,11 @@ void loop() {
     displayLastRefresh = now;
     if (displayNeedsSpace) {
        // Serial.println("-----");
-      printColumn(B00000, charHeight);
+      printColumn(B00000);
       displayNeedsSpace = false;
     }
     else if (displayReverse)
-      printColumn(B00000, charHeight);
+      printColumn(B00000);
     else
       printNextColumn();
   }
@@ -282,7 +280,7 @@ void printNextColumn() {
   // Serial.print(displayCharacterColumn);
   // Serial.print('=');
   // Serial.println(column, BIN);
-  printColumn(column, charHeight);
+  printColumn(column);
   
   // Move markers to next column
   if (displayCharacterColumn == charWidth - 1) { // If end of a char
@@ -295,8 +293,8 @@ void printNextColumn() {
   }
 }
 
-void printColumn(byte column, int size) {
-  for (int y=0; y<size; y++) {
+void printColumn(byte column) {
+  for (int y=0; y < SIZE(ledPins); y++) {
     // Get current pixel
     boolean pixel = column & (1 << y);
     digitalWrite(ledPins[y], pixel);
