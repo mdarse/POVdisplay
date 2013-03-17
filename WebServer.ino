@@ -19,7 +19,8 @@ WebServer webserver(PREFIX, 80);
 //// ROM-based messages (we only have 1k of RAM we need to be conservative)
 P(Page_start) = "<!DOCTYPE html>\n<html><head><title>TrainsPOVing</title></head><body>\n";
 P(Page_end) = "</body></html>";
-P(Hello_world) = "<h1>Hello POV !</h1>\n<img src=\"http://i.imgur.com/f6V29.gif\">";
+P(Hello_world) = "<h1>Hello POV !</h1>\n<img src=\"http://i.imgur.com/f6V29.gif\">\n<br>\n<a href=\"display\">manage display</a>";
+P(Display_form) = "<form method=\"POST\">\n<label>Display text <input name=\"text\"></label>\n<input type=\"submit\">\n</form>";
 
 P(Get_head) = "<h1>GET from ";
 P(Post_head) = "<h1>POST to ";
@@ -102,6 +103,40 @@ void parseCommand(WebServer &server, WebServer::ConnectionType type, char *url_t
   server.printP(Page_end);
 }
 
+void displayCommand(WebServer &server, WebServer::ConnectionType type, char *, bool) {
+  if (type == WebServer::POST) {
+    bool repeat;
+    char name[NAMELEN], value[VALUELEN];
+    
+    int i = 0;
+    
+    // handle each POST parameter
+    do {
+      // returns false when there are no more parameters to read
+      repeat = server.readPOSTparam(name, NAMELEN, value, VALUELEN);
+      
+      if (strcmp(name, "text") == 0) {
+        // change display text here
+      }
+    }
+    while (repeat);
+    
+    // tell the web browser to reload
+    // the page using a GET method
+    server.httpSeeOther(PREFIX);
+    return;
+  }
+  
+  // for non-POST request, send HTTP OK
+  server.httpSuccess();
+  // stop here for HEAD requests
+  if (type == WebServer::HEAD) return;
+  
+  server.printP(Page_start);
+  server.printP(Display_form);
+  server.printP(Page_end);
+}
+
 //// End of commands
 
 
@@ -112,6 +147,7 @@ void setup() {
   // start the Ethernet connection and the server:
   Ethernet.begin(mac, ip);
   webserver.setDefaultCommand(&helloCommand);
+  webserver.addCommand("display", &displayCommand); // handle text setting
   webserver.addCommand("diag.html", &parseCommand);
   webserver.begin();
   
