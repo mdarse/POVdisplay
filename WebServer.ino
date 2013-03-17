@@ -62,6 +62,63 @@ void helloCommand(WebServer &server, WebServer::ConnectionType type, char * url_
   server.printP(Page_end);
 }
 
+
+#define NAMELEN 32
+#define VALUELEN 32
+
+void parseCommand(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+
+  server.httpSuccess();
+
+  if (type == WebServer::HEAD) return;
+
+  server.printP(Page_start);
+  switch (type) {
+    case WebServer::GET:
+      server.printP(Get_head);
+      break;
+    case WebServer::POST:
+      server.printP(Post_head);
+      break;
+    default:
+      server.printP(Unknown_head);
+  }
+
+  server.printP(Parsed_head);
+  server.printP(tail_complete ? Good_tail_begin : Bad_tail_begin);
+  server.print(url_tail);
+  server.printP(Tail_end);
+
+  if (strlen(url_tail)) {
+    server.printP(Parsed_tail_begin);
+    while (strlen(url_tail)) {
+      rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+      if (rc == URLPARAM_EOS)
+        server.printP(Params_end);
+      else {
+        server.print(name);
+        server.printP(Parsed_item_separator);
+        server.print(value);
+        server.printP(Tail_end);
+      }
+    }
+  }
+  
+  if (type == WebServer::POST) {
+    server.printP(Post_params_begin);
+    while (server.readPOSTparam(name, NAMELEN, value, VALUELEN)) {
+      server.print(name);
+      server.printP(Parsed_item_separator);
+      server.print(value);
+      server.printP(Tail_end);
+    }
+  }
+  server.printP(Page_end);
+}
+
 //// End of commands
 
 
@@ -73,6 +130,7 @@ void setup() {
   Ethernet.begin(mac, ip);
   webserver.setDefaultCommand(&helloCommand);
   webserver.addCommand("index.html", &helloCommand); // alias for / (defaultCommand)
+  webserver.addCommand("diag.html", &parseCommand);
   webserver.begin();
   
   Serial.print("server is at ");
